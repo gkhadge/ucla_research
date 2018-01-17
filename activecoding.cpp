@@ -2,16 +2,21 @@
 #include <stdlib.h>
 #include <cmath>
 #include <ctime>
-#include <thread>
-// #include <random>
+// #include <thread>
+#include <vector>
+#include <algorithm>
+#include <iterator>
+#include <numeric>
+#include <random>
 // #include <boost/random/uniform_int.hpp>
 #include <fstream>
+#include <assert.h>
 // #include <chrono>
 using namespace std;
 
 static unsigned int seed;
 
-double binary_entropy(const double p)
+long double binary_entropy(const long double p)
 {
 	// Hbp = binary_entropy(p)
 	//  Returns the binary entropy of probability p
@@ -24,12 +29,12 @@ double binary_entropy(const double p)
 	// }
 
 	// calculate the binary entropy
-	double Hbp = (p==0 || p==1)  ? 0 : -p*log2(p) - (1-p)*log2(1-p);
+	long double Hbp = (p==0 || p==1)  ? 0 : -p*log2(p) - (1-p)*log2(1-p);
 	return Hbp;
 }
 
 // function prob_vec_next = update_probs(prob_vec_current, y, x_vec, del)
-void update_probs(const double* prob_vec_current, const int y, const int* x_vec, const double del, const int M, double* prob_vec_next) 
+void update_probs(const long double* prob_vec_current, const char y, const char* x_vec, const long double del, const unsigned long long M, long double* prob_vec_next) 
 {
 	// function prob_vec_next = update_probs(prob_vec_current, y, x_vec, del)
 	//
@@ -63,7 +68,7 @@ void update_probs(const double* prob_vec_current, const int y, const int* x_vec,
 	// 	prob_vec_next[i] = 0;
 	// }
 
-	double prob_vec_next_sum = 0;
+	long double prob_vec_next_sum = 0;
 	for (int mdx = 0; mdx < M; ++mdx) {
 		//printf("\n %d  %d", x_vec[mdx], y);
 	    // if (x_vec[mdx] != y)
@@ -79,7 +84,7 @@ void update_probs(const double* prob_vec_current, const int y, const int* x_vec,
 	// normalize
 	//prob_vec_next = prob_vec_next ./ sum(prob_vec_next);
 	//printf("\n");
-	for (int i=0; i<M; ++i){
+	for (unsigned long long i=0; i<M; ++i){
 		prob_vec_next[i] = prob_vec_next[i]/prob_vec_next_sum;
 		//printf("%4.4f ", prob_vec_next[i]);
 	}
@@ -87,8 +92,132 @@ void update_probs(const double* prob_vec_current, const int y, const int* x_vec,
 }
 
 
+// //function [set_S0, set_S1] = partition_beliefs(prob_vec)
+// void partition_beliefs(const double* prob_vec, const int M, int* set_num)
+// {
+// 	// Partition beliefs into two sets S0 and S1 that are as close together in
+// 	// probability, but S0 is greater than S1
+// 	//
+// 	//   prob_vec = M-vector of probabilities that add to 1
+// 	//
+// 	// Implements Algorithm 2 of
+// 	//   [4] Naghshvar & Javidi, "Extrinic Jensen-Shannon (EJS) Divergence", arXiv
+// 	//   2013
+// 	// Complexity is of order O(M^2)
+
+// 	int s0_ind = 0;
+
+// 	// Initialize the probability weights of the sets
+// 	double prob_S0 = 1;
+// 	double prob_S1 = 0;
+// 	//set_S0 = [1:M];
+// 	//set_S1 = [];
+
+// 	//int set_num[M]; //s0_ind if in S0, !s0_ind if in S1
+// 	for (int i=0; i<M;++i){
+// 		set_num[i] = s0_ind;
+// 	}
+
+// 	double min_prob = 0;       // smallest probability of element in S0
+// 	double delta = 1;          // difference between set probabilities of S0 and S1
+
+// 	// Initialize prob_k and kdx
+//     double prob_k = 1; // min element
+//     int kdx;
+//     double prob_max = -1;
+//     int k_max = 0;
+//    	for (int i=0; i<M; ++i){
+// 		if (prob_vec[i] < prob_k){
+// 			prob_k = prob_vec[i];
+// 			kdx = i;
+// 		}
+// 		if (prob_vec[i] > prob_max){
+// 			prob_max = prob_vec[i];
+// 			k_max = i;
+// 		}
+//     }
+//     if (prob_max >= 0.5) {
+//     	for (int i=0; i<M; ++i){
+//     		set_num[i] = (i == k_max);
+//     	}
+//     } else {
+// 	    int n = 0;
+// 		while (min_prob < delta) {
+// 		    // Find the element in S0 w/ smallest probability
+// 		    //[prob_k, kdx] = min(prob_vec(set_S0));
+
+// 		    // if isempty(kdx) {
+// 		    //     //error('Index of smallest element is empty.');
+// 		    //     printf("Index of smallest element is empty.");
+// 		    // }
+
+// 		    // Put this element in S1, take it out of S0
+// 		    //set_S1 = [set_S1 set_S0(kdx)];
+// 		    //set_S0 = [set_S0(1:kdx-1) set_S0(kdx+1:length(set_S0))];
+// 		    set_num[kdx] = !s0_ind;
+		    
+// 		    // if (length(set_S0) + length(set_S1) != M) {
+// 		    //     error('Error in switching set elements. Investigate further.');
+// 		    // }
+// 		    // Update the set probabilities
+// 		    prob_S0 = prob_S0 - prob_k;
+// 		    prob_S1 = prob_S1 + prob_k;
+		    
+// 		    // prob_S1 = 0;
+// 		    // for (int i=0; i<M; ++i){
+// 		    // 	printf("\n\n%d  %4.4f",set_num[i],prob_vec[i]);
+// 		    // 	if (set_num[i])
+// 		    // 		prob_S1 += prob_vec[i];
+// 		    // }
+// 		    // prob_S0 = 1 - prob_S1;
+// 		    // printf("\n%d",n);
+// 		    // n+=1;
+
+// 		    // Check which set is biggest now
+// 		    if (prob_S0 < prob_S1) {
+// 		        // Swap sets
+// 		        s0_ind = !s0_ind;
+// 		        // set_temp = set_S0;
+// 		        // set_S0 = set_S1;
+// 		        // set_S1 = set_temp;
+// 		    	// for (int i=0; i<M; ++i){
+// 		    	// 	set_num[i] = !(set_num[i]);
+// 		    	// }
+// 		        // Update the set probabilities
+// 		        double prob_temp = prob_S0;
+// 		        prob_S0 = prob_S1;
+// 		        prob_S1 = prob_temp;
+// 		    }
+		    
+// 		    // Compute the difference between sets (which is positive now)
+// 		    delta = prob_S0 - prob_S1;
+// 		    // Compute the smallest probability of an element in S0
+// 		    //min_prob = min(prob_vec(set_S0));
+
+// 		    prob_k = 2;
+// 		   	for (int i=0; i<M; ++i){
+// 		    	if(set_num[i] == s0_ind){
+// 		    		if (prob_vec[i] < prob_k){
+// 		    			prob_k = prob_vec[i];
+// 		    			kdx = i;
+// 		    		}
+// 		    	}
+// 		    }
+// 		    min_prob = prob_k;
+// 		}	
+// 	}
+// 	// Correct the set output if s0 is inverted to 1 instead of 0.
+// 	if (s0_ind == 1) {
+//     	for (int i=0; i<M; ++i){
+//     		set_num[i] = !(set_num[i]);
+//     	}
+// 	}
+// }
+
+
+
 //function [set_S0, set_S1] = partition_beliefs(prob_vec)
-void partition_beliefs(const double* prob_vec, const int M, int* set_num)
+void partition_beliefs(const long double* prob_vec, const unsigned long long M, char* set_num)
 {
 	// Partition beliefs into two sets S0 and S1 that are as close together in
 	// probability, but S0 is greater than S1
@@ -100,117 +229,138 @@ void partition_beliefs(const double* prob_vec, const int M, int* set_num)
 	//   2013
 	// Complexity is of order O(M^2)
 
-	int s0_ind = 0;
+    auto compare = [&] (unsigned long long i1, unsigned long long i2) {
+	    return prob_vec[i1] > prob_vec[i2];
+	};
 
-	// Initialize the probability weights of the sets
-	double prob_S0 = 1;
-	double prob_S1 = 0;
-	//set_S0 = [1:M];
-	//set_S1 = [];
+    auto compare_less = [&] (unsigned long long i1, unsigned long long i2) {
+	    return prob_vec[i1] < prob_vec[i2];
+	};
 
-	//int set_num[M]; //s0_ind if in S0, !s0_ind if in S1
-	for (int i=0; i<M;++i){
-		set_num[i] = s0_ind;
-	}
+	auto insert_sorted = [&] ( std::vector<unsigned long long> & vec, unsigned long long const& item )
+	{
+	    vec.insert(std::upper_bound(vec.begin(), vec.end(), item, compare), item );
+	    return;
+	};
 
-	double min_prob = 0;       // smallest probability of element in S0
-	double delta = 1;          // difference between set probabilities of S0 and S1
+	std::vector<unsigned long long> indices(M) ; // vector with 100 ints.
+	std::iota (indices.begin(), indices.end(), 0); // Fill with 0, 1, ..., 99.
 
-	// Initialize prob_k and kdx
-    double prob_k = 1; // min element
-    int kdx;
-    double prob_max = -1;
-    int k_max = 0;
-   	for (int i=0; i<M; ++i){
-		if (prob_vec[i] < prob_k){
-			prob_k = prob_vec[i];
-			kdx = i;
-		}
-		if (prob_vec[i] > prob_max){
-			prob_max = prob_vec[i];
-			k_max = i;
-		}
-    }
+    unsigned long long k_max = *std::max_element(indices.begin(), indices.end(), compare_less);
+	long double prob_max = prob_vec[k_max];
     if (prob_max >= 0.5) {
-    	for (int i=0; i<M; ++i){
+    	for (unsigned long long i=0; i<M; ++i){
     		set_num[i] = (i == k_max);
     	}
-    } else {
-	    int n = 0;
-		while (min_prob < delta) {
-		    // Find the element in S0 w/ smallest probability
-		    //[prob_k, kdx] = min(prob_vec(set_S0));
+    	return;
+    }
 
-		    // if isempty(kdx) {
-		    //     //error('Index of smallest element is empty.');
-		    //     printf("Index of smallest element is empty.");
-		    // }
+    std::sort(indices.begin(), indices.end(), compare);
+    
+    // for (vector<int>::const_iterator i = indices.begin(); i != indices.end(); ++i)
+    //     cout << *i << ": " << prob_vec[*i] << endl;
 
-		    // Put this element in S1, take it out of S0
-		    //set_S1 = [set_S1 set_S0(kdx)];
-		    //set_S0 = [set_S0(1:kdx-1) set_S0(kdx+1:length(set_S0))];
-		    set_num[kdx] = !s0_ind;
-		    
-		    // if (length(set_S0) + length(set_S1) != M) {
-		    //     error('Error in switching set elements. Investigate further.');
-		    // }
-		    // Update the set probabilities
-		    prob_S0 = prob_S0 - prob_k;
-		    prob_S1 = prob_S1 + prob_k;
-		    
-		    // prob_S1 = 0;
-		    // for (int i=0; i<M; ++i){
-		    // 	printf("\n\n%d  %4.4f",set_num[i],prob_vec[i]);
-		    // 	if (set_num[i])
-		    // 		prob_S1 += prob_vec[i];
-		    // }
-		    // prob_S0 = 1 - prob_S1;
-		    // printf("\n%d",n);
-		    // n+=1;
+    // cout << endl;
+	long double prob_A = 0;
+	long double prob_B = 1;
+	// double prob = 0;
+	std::vector<unsigned long long>::iterator it = indices.begin();
+	while(true) {
+	// for(std::vector<int>::iterator it = indices.begin(); prob_vec[*it] < (prob_S0 - prob_S1) ; ++it) {
+	    /* std::cout << *it; ... */
 
-		    // Check which set is biggest now
-		    if (prob_S0 < prob_S1) {
-		        // Swap sets
-		        s0_ind = !s0_ind;
-		        // set_temp = set_S0;
-		        // set_S0 = set_S1;
-		        // set_S1 = set_temp;
-		    	// for (int i=0; i<M; ++i){
-		    	// 	set_num[i] = !(set_num[i]);
-		    	// }
-		        // Update the set probabilities
-		        double prob_temp = prob_S0;
-		        prob_S0 = prob_S1;
-		        prob_S1 = prob_temp;
-		    }
-		    
-		    // Compute the difference between sets (which is positive now)
-		    delta = prob_S0 - prob_S1;
-		    // Compute the smallest probability of an element in S0
-		    //min_prob = min(prob_vec(set_S0));
-
-		    prob_k = 2;
-		   	for (int i=0; i<M; ++i){
-		    	if(set_num[i] == s0_ind){
-		    		if (prob_vec[i] < prob_k){
-		    			prob_k = prob_vec[i];
-		    			kdx = i;
-		    		}
-		    	}
-		    }
-		    min_prob = prob_k;
-		}	
+	    if (prob_vec[*it] > (prob_B - prob_A)) 
+	    	break;
+	    // prob += prob_vec[*it];
+	    prob_A += prob_vec[*it];
+	    prob_B -= prob_vec[*it];
+	    // cout << *it << ": " << prob_vec[*it] << endl;
+	    
+	    ++it;
 	}
-	// Correct the set output if s0 is inverted to 1 instead of 0.
-	if (s0_ind == 1) {
-    	for (int i=0; i<M; ++i){
-    		set_num[i] = !(set_num[i]);
+	// cout << "prob_S0: " << prob_A << endl;
+	// cout << "prob_S1: " << prob_B << endl;
+	
+    std::vector<unsigned long long> setA(indices.begin(), it);
+    std::vector<unsigned long long> setB(it, indices.end());
+    
+    while (true) {
+    	// if (prob_A + prob_B != 1) {
+	    // 	printf("\nProb A: %4.4f \t Prob B: %4.4f", prob_A, prob_B);
+	    // 	printf("\nProb A + Prob B - 1: %e ",  prob_A + prob_B - 1);
+	    // 	printf("\nMin Prob A: %e ",  prob_vec[setA.back()]);
+	    // 	printf("\nMin Prob B: %e ",  prob_vec[setB.back()]);
+    	// }
+
+    	if (prob_A + prob_B - 1 > 1e-200){
+	    	// printf("\nProb A: %4.4f \t Prob B: %4.4f", prob_A, prob_B);
+	    	// printf("\nProb A + Prob B - 1: %e ",  prob_A + prob_B - 1);
+	    	// printf("\nMin Prob A: %e ",  prob_vec[setA.back()]);
+	    	// printf("\nMin Prob B: %e ",  prob_vec[setB.back()]);
+	    	prob_A = 0;
+		    for (vector<unsigned long long>::const_iterator i = setA.begin(); i != setA.end(); ++i)
+		    	prob_A += prob_vec[*i];	    
+
+	    	prob_B = 1 - prob_A;
+		    // for (vector<int>::const_iterator i = setB.begin(); i != setB.end(); ++i)
+		    // 	prob_B += prob_vec[*i];	
+    		// printf("\nProb A + Prob B - 1: %e ",  prob_A + prob_B - 1);
+			assert (prob_A + prob_B - 1 < 1e-200); 
     	}
-	}
+
+        if (prob_A > prob_B){
+            long double prob = prob_vec[setA.back()];
+            if (prob < (prob_A - prob_B)){
+                prob_B += prob;
+                prob_A -= prob;
+                insert_sorted(setB,setA.back());
+                setA.pop_back();
+            } else {
+                break;
+            }
+        } else {
+            long double prob = prob_vec[setB.back()];
+            if (prob < (prob_B - prob_A)){
+                prob_A += prob;
+                prob_B -= prob;
+                insert_sorted(setA,setB.back());
+                setB.pop_back();
+            } else {
+                break;
+            }
+        }
+    }
+ //    if (prob_A + prob_B != 1){
+ //    	printf("\nProb A: %4.4f \t Prob B: %4.4f", prob_A, prob_B);
+ //    	printf("\nProb A + Prob B - 1: %e ",  prob_A + prob_B - 1);
+ //    	printf("\nMin Prob A: %e ",  prob_vec[setA.back()]);
+ //    	printf("\nMin Prob B: %e ",  prob_vec[setB.back()]);
+
+ //    	prob_A = 0;
+ //    	prob_B = 0;
+
+	//     for (vector<int>::const_iterator i = setA.begin(); i != setA.end(); ++i)
+	//     	prob_A += prob_vec[*i];	    
+	//     for (vector<int>::const_iterator i = setB.begin(); i != setB.end(); ++i)
+	//     	prob_B += prob_vec[*i];	    
+ //    	printf("\nProb A + Prob B - 1: %e ",  prob_A + prob_B - 1);
+		
+	// 	assert (prob_A + prob_B  == 1);
+	// 	assert (1 == 0);
+	// }
+    // if (probA + probB != 1)
+    // 	throw std::runtime_error("Error probability does not add up");
+
+	char setA_val = prob_B > prob_A;
+	char setB_val = !setA_val;
+    for (vector<unsigned long long>::const_iterator i = setA.begin(); i != setA.end(); ++i)
+    	set_num[*i] = setA_val;	    
+    for (vector<unsigned long long>::const_iterator i = setB.begin(); i != setB.end(); ++i)
+    	set_num[*i] = setB_val;
 }
 
 //function [Etau_sim, num_msg_errors, num_msgs] = active_coding_M(M, del, epsi, num_msgs, coding_scheme)
-void active_coding_M(unsigned long M, double del, double epsi, unsigned long num_msgs, int coding_scheme, unsigned long *sum_tau_out, int print_output)
+void active_coding_M(unsigned long long M, long double del, long double epsi, unsigned long num_msgs, int coding_scheme, unsigned long *sum_tau_out, unsigned long *_num_msg_errors, int print_output)
 {
 
 	// function [Etau_sim, num_msg_errors, num_msgs] = active_coding_M(M, del, epsi, num_msgs, coding_scheme)
@@ -230,14 +380,15 @@ void active_coding_M(unsigned long M, double del, double epsi, unsigned long num
 
 	//Random number generator
 	//default_random_engine generator (seed++);
-	// mt19937 generator (seed);
-	// uniform_int_distribution<int> dist0M(0,M-1);
-	// bernoulli_distribution dist_bern(del);
+	mt19937 generator (seed);
+	// std::uniform_int_distribution<unsigned long long> dist0M(0,M-1);
+	std::uniform_int_distribution<> dist0M(0,M-1);
+	bernoulli_distribution dist_bern(del);
 	srand(seed);
 	//// Simulation parameters
 
 	// BSC channel capacity
-	double capacity = 1 - binary_entropy(del); 
+	long double capacity = 1 - binary_entropy(del); 
 
 	// Debugging switch
 	bool DBG_ON = false; 
@@ -295,13 +446,18 @@ void active_coding_M(unsigned long M, double del, double epsi, unsigned long num
 	    ////
 	    // Deterministic message-partitioning scheme based on beliefs
 	    //
-	    double rand01;
-	    double prob_vec_next[M], prob_vec_current[M];
-	    unsigned long W, W_hat;
+	    // double rand01;
+	    // double prob_vec_next[M], prob_vec_current[M];
+	    long double array_one[M];
+	    long double array_two[M];
+		long double *prob_vec_next = array_one;
+		long double *prob_vec_current = array_two;
+	    long double *temp;
+	    unsigned long long W, W_hat;
 	        // Decoded message \hat W
 	    unsigned long tau;
-	    int x_vec[M];
-	    int tx_bit, rx_bit;
+	    char x_vec[M];
+	    char tx_bit, rx_bit;
 
 	    for (unsigned long msg_idx = 1; msg_idx <= num_msgs; ++msg_idx) {
 	        
@@ -324,10 +480,10 @@ void active_coding_M(unsigned long M, double del, double epsi, unsigned long num
 	        } else {
 	            // Random assignment
 	            //W = ceil(rand(1)*M);
-	            rand01 = rand() / (double(RAND_MAX) + 0.0001);
-	            W = floor(rand01*M);
+	            // rand01 = rand() / (double(RAND_MAX) + 0.0001);
+	            // W = floor(rand01*M);
 
-	            // W = dist0M(generator);
+	            W = dist0M(generator);
 
 	            //printf("\nrand01 = %4.4f", rand01);
 	            //printf("\nmsg_idx = %u, W = %u\n", msg_idx, W);
@@ -340,19 +496,21 @@ void active_coding_M(unsigned long M, double del, double epsi, unsigned long num
 	        // receiver
 	        //prob_vec_current = ones(1,M)./M;
 	        // double prob_vec_current[M];
-	        for(int i=0;i<M;++i){
+	        for(unsigned long long i=0;i<M;++i){
 	        	prob_vec_current[i] = 1.0/M;
 	        }
 	        
 	        //printf("... simulating message %u\n", msg_idx);
-	        if (print_output >= 2)
-		        if ( msg_idx % 10000 == 0)
-		            printf("\n... simulating message %lu", msg_idx);
+	        // if (print_output >= 2)
+		       //  if ( msg_idx % 10000 == 0)
+		       //      printf("\n... simulating message %lu", msg_idx);
 	        
 	        // Start sending symbols across the channel (tdx is the transmission
 	        // index)
-	        for(int tdx = 0; tdx < num_bits_per_msg; ++tdx){
-	            
+		    // unsigned long tdx = 0;
+	        //for(int tdx = 0; tdx < num_bits_per_msg; ++tdx){
+	        while(true) {
+	            ++tau;
 	            // Partition messages into two sets based on the current beliefs
 	            // int x_vec[M];
 	            //[set_S0, set_S1] = partition_beliefs(prob_vec_current, M, set_num);
@@ -389,10 +547,10 @@ void active_coding_M(unsigned long M, double del, double epsi, unsigned long num
 	            // channel)
 	            // int rx_bit = (tx_bit + noise_vec[tdx]) % 2;
 
-				rand01 = rand() / double(RAND_MAX);				
-	            rx_bit = (rand01 < del) ? !tx_bit : tx_bit;
+				// rand01 = rand() / double(RAND_MAX);				
+	            // rx_bit = (rand01 < del) ? !tx_bit : tx_bit;
 
-	            // rx_bit = dist_bern(generator) ? !tx_bit : tx_bit;
+	            rx_bit = dist_bern(generator) ? !tx_bit : tx_bit;
 
 	            // printf("\n");
 	            // printf("%d",rx_bit);
@@ -419,39 +577,62 @@ void active_coding_M(unsigned long M, double del, double epsi, unsigned long num
 	            // likely)
 	            //[prob_max, W_hat] = max(prob_vec_next);
             
-            	double prob_max = -1;
+            	bool done = false;
 			   	//printf("\n");
-			   	for (int i=0; i<M; ++i){
+			   	for (unsigned long long i=0; i<M; ++i){
 			   		//printf("%4.4f  ", prob_vec_next[i]);
-					if (prob_vec_next[i] > prob_max){
-						prob_max = prob_vec_next[i];
+					// if (prob_vec_next[i] > prob_max){
+					// 	prob_max = prob_vec_next[i];
+					// 	W_hat = i;
+					// }
+					if (prob_vec_next[i] > (1 - epsi)){
+						// prob_max = prob_vec_next[i];
 						W_hat = i;
+						done = true;
+						break;
 					}
 			    }
+			    if(done)
+			    	break;
+			    // printf("\n%4.4f  ", prob_max);
 	            // If probability of error is less than epsilon
-	            if (prob_max > (1 - epsi)){
+	            // if (prob_max > (1 - epsi)){
 	                
-	                // Store the stopping time of this message
-	                tau = (tdx + 1);
-	                // Don't send any more bits
-	                break;
-	            }
+	            //     // Store the stopping time of this message
+	            //     // tau = (tdx + 1);
+	            //     // Don't send any more bits
+	            //     break;
+	            // }
+	            
+	            // // If probability of error is less than epsilon
+	            // if (prob_vec_next[W] > (1 - epsi)){
+	                
+	            //     // Store the stopping time of this message
+	            //     tau = (tdx + 1);
+	            //     // Don't send any more bits
+	            //     break;
+	            // }
 	            
 	                        
 	            // Store belief vector for next time
 	            //prob_vec_current = prob_vec_next;    
-			   	for (int i=0; i<M; ++i){
-					prob_vec_current[i] = prob_vec_next[i];
-			    }        
+			  //  	for (unsigned long long i=0; i<M; ++i){
+					// prob_vec_current[i] = prob_vec_next[i];
+			  //   }        
+			    // memcpy( prob_vec_current, prob_vec_next, M );
+			    // Swap arrays using pointers
+			    temp = prob_vec_current;
+			    prob_vec_current = prob_vec_next;
+			    prob_vec_next = prob_vec_current;
 	            
 	        } // time tdx
 	        
-	        if (tau == 0){
-	            // We didn't find a stopping time before reaching the max number of
-	            // bits
-	            //error('Need to increase the max number of transmitted bits per message.');
-	            printf("\n\n\n\n\nNeed to increase the max number of transmitted bits per message.\n\n\n\n\n");
-	        }
+	        // if (tau == 0){
+	        //     // We didn't find a stopping time before reaching the max number of
+	        //     // bits
+	        //     //error('Need to increase the max number of transmitted bits per message.');
+	        //     printf("\n\n\n\n\nNeed to increase the max number of transmitted bits per message.\n\n\n\n\n");
+	        // }
 	        
 	        // Update the number of message errors
 	        if (W != W_hat) {
@@ -461,15 +642,19 @@ void active_coding_M(unsigned long M, double del, double epsi, unsigned long num
 	        // Update the cumulative stopping time (which will be averaged
 	        // later)
 	        sum_tau += tau;
+
 	        
 	    } // message msg_idx
+
+        // delete [] prob_vec_next;
+        // delete [] prob_vec_current;
 	}    
 	// elseif coding_scheme == GHBZ_determ_scheme || coding_scheme == GHBZ_random_scheme
 	    
 	//// Compute statistics of simulation
 
 	// Compute probability of undetected error
-	double PrErr = double(num_msg_errors) / num_msgs;
+	long double PrErr = (long double) (num_msg_errors) / num_msgs;
 
 
     if (print_output >= 1)
@@ -480,13 +665,14 @@ void active_coding_M(unsigned long M, double del, double epsi, unsigned long num
 		printf("\nActual word-error probability is %01.3e", PrErr);
 
 		// Compute the average rate
-		double Etau_sim = double(sum_tau) / num_msgs;
-		double rate_sim = log2(M) / Etau_sim;
+		long double Etau_sim = (long double) (sum_tau) / num_msgs;
+		long double rate_sim = log2(M) / Etau_sim;
 		printf("\nRate: %01.3f, latency: %01.2f", rate_sim, Etau_sim);
 		// printf("\n");
 	}
-	printf("\nsum_tau: %lu, num_msgs: %lu", sum_tau, num_msgs);
+	// printf("\nsum_tau: %lu, num_msgs: %lu", sum_tau, num_msgs);
 	*sum_tau_out = sum_tau;
+	*_num_msg_errors = num_msg_errors;
 }
 
 
@@ -677,7 +863,7 @@ void active_coding_M(unsigned long M, double del, double epsi, unsigned long num
 int main(int argc, char* argv[]) 
 {
 	unsigned int k;
-	int num_threads;
+	// int num_threads;
 	unsigned long num_msgs;
 	if (argc <2)
 		k = 1;
@@ -697,10 +883,10 @@ int main(int argc, char* argv[])
 		num_msgs = atoi(argv[3]);
 
 
-	num_threads = 1;
+	// num_threads = 1;
 
 	printf("\nk: %u", k);
-	printf("\nnum_threads: %d", num_threads);
+	// printf("\nnum_threads: %d", num_threads);
 	printf("\n");
 
     // Debugging switch
@@ -708,26 +894,26 @@ int main(int argc, char* argv[])
 
 	// overall probability of error desired, epsilon
 	// double epsi = pow(10,-1);           // for PhD defense animation
-	double epsi = pow(10,-3);       // for PhD thesis
+	long double epsi = pow(10,-3);       // for PhD thesis
 
 	// BSC crossover probability delta
 	//del = 0.11;   // in [PPV 2011]
 	//del = 0.11009;  // for SNR = 1.77 dB, hard-decision decoding
-	double del = 0.05005;  // for SNR = 4.32 dB, hard-decision decoding, // for PhD thesis
+	long double del = 0.05005;  // for SNR = 4.32 dB, hard-decision decoding, // for PhD thesis
 	//double del = 0.1;  // for PhD defense animation
 
 
 	// BSC channel capacity
-	double capacity = 1 - binary_entropy(del); 
-	double lr = del / (1 - del);   // likelihood ratio
-	double llr = log2(lr);           // log likelihood ratio
+	long double capacity = 1 - binary_entropy(del); 
+	long double lr = del / (1 - del);   // likelihood ratio
+	long double llr = log2(lr);           // log likelihood ratio
 
 	// Maximum KL divergence (relative entropy), C_1
-	double C1 = (2*del - 1) * llr;
+	long double C1 = (2*del - 1) * llr;
 	// Maximum difference between Ui(t), Ui(t+1) in (13) of [2]
-	double C2 = -llr;
+	long double C2 = -llr;
 	// F(C,C1,C2) = K', a constant independent of M & epsilon
-	double Kprime = 3 * C2*C2 / (capacity*C1);
+	long double Kprime = 3 * C2*C2 / (capacity*C1);
 	  
 	// k = # message bits
 	// k = [2:2:20];
@@ -738,7 +924,7 @@ int main(int argc, char* argv[])
 
 	// GOURAV EDIT
 	// M = # messages
-	unsigned long M = round(pow(2,k));
+	unsigned long long  M = round(pow(2,k));
 	// Update k after choosing M that is an integer
 	//k = log2(M);
 
@@ -777,16 +963,16 @@ int main(int argc, char* argv[])
 	// coding_scheme = GHBZ_random_scheme;
 
 	
-	printf("\nCapacity: %4.4f", capacity);
-	printf("\nC1: %4.4f", C1);
-	printf("\nC2: %4.4f", C2);
-	printf("\nKprime: %4.4f", Kprime);
+	printf("\nCapacity: %4.4Lf", capacity);
+	printf("\nC1: %4.4Lf", C1);
+	printf("\nC2: %4.4Lf", C2);
+	printf("\nKprime: %4.4Lf", Kprime);
 	printf("\nk: %d", k);
 
 	printf("\n");
 	printf("\nM: %lu", M);
-	printf("\ndel: %4.4f", del);
-	printf("\nepsi: %4.4f", epsi);
+	printf("\ndel: %4.4Lf", del);
+	printf("\nepsi: %4.4Lf", epsi);
 	printf("\nnum_msgs: %lu", num_msgs);
 	printf("\ncoding_scheme: %d", coding_scheme);
 	//[Etau_sim(Mdx), num_msg_errors(Mdx)] = active_coding_M(M(Mdx), del, epsi, num_msgs(Mdx), coding_scheme);
@@ -800,53 +986,60 @@ int main(int argc, char* argv[])
   	clock_t begin = clock();
 
 	// active_coding_M(M, del, epsi, num_msgs, coding_scheme);
-    
-    //int num_threads = 4;
 
-	std::thread t[num_threads];
-	int print_output = 0;
-
-	unsigned long sum_taus[num_threads];
-
-	unsigned long num_msgs_per_thread = floor(num_msgs/num_threads);
-
-	//Launch a group of threads
-	for (int i = 0; i < num_threads; ++i) {
-		t[i] = std::thread(active_coding_M, M, del, epsi, num_msgs_per_thread, coding_scheme, &sum_taus[i], print_output);
-	}
-
-	// std::cout << "Launched from the main\n";
-
-	//Join the threads with the main thread
-	for (int i = 0; i < num_threads; ++i) {
-		t[i].join();
-	}
- 
 	unsigned long total_sum_tau = 0;
-	for(int i = 0; i<num_threads; ++i){
-		total_sum_tau += sum_taus[i];
-	}
+	int print_output = 0;
+	active_coding_M(M, del, epsi, num_msgs, coding_scheme, &total_sum_tau, &num_msg_errors, print_output);
+    
+ //    //int num_threads = 4;
 
-	unsigned long total_num_msgs = num_msgs_per_thread*num_threads;
+	// std::thread t[num_threads];
+	// int print_output = 0;
+
+	// unsigned long sum_taus[num_threads];
+
+	// unsigned long num_msgs_per_thread = floor(num_msgs/num_threads);
+
+	// //Launch a group of threads
+	// for (int i = 0; i < num_threads; ++i) {
+	// 	t[i] = std::thread(active_coding_M, M, del, epsi, num_msgs_per_thread, coding_scheme, &sum_taus[i], print_output);
+	// }
+
+	// // std::cout << "Launched from the main\n";
+
+	// //Join the threads with the main thread
+	// for (int i = 0; i < num_threads; ++i) {
+	// 	t[i].join();
+	// }
+ 
+	// unsigned long total_sum_tau = 0;
+	// for(int i = 0; i<num_threads; ++i){
+	// 	total_sum_tau += sum_taus[i];
+	// }
+
+	// unsigned long total_num_msgs = num_msgs_per_thread*num_threads;
+	unsigned long total_num_msgs = num_msgs;
 	// Compute the average rate
-	double Etau_sim = double(total_sum_tau) / total_num_msgs;
-	double rate_sim = log2(M) / Etau_sim;
+	long double Etau_sim = (long double) (total_sum_tau) / total_num_msgs;
+	long double rate_sim = log2(M) / Etau_sim;
 	printf("\nsum_tau: %lu, num_msgs: %lu", total_sum_tau, total_num_msgs);
-	printf("\nRate: %01.3f, latency: %01.2f", rate_sim, Etau_sim);
+	printf("\nRate: %01.3Lf, latency: %01.2Lf", rate_sim, Etau_sim);
+	printf("\nNumber of Message Errors: %lu", num_msg_errors);
 
 
 	clock_t end = clock();
-  	double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
-  	printf("\nElapsed Time: %0.0f\n", elapsed_secs);
+  	long double elapsed_secs = (long double) (end - begin) / CLOCKS_PER_SEC;
+  	printf("\nElapsed Time: %0.0Lf\n", elapsed_secs);
 
 
 	ofstream myfile ("./data/ASHT_k-" + to_string((long long unsigned int) k) + "_seed-" + to_string((long long unsigned int) seed) + ".txt");
 	if (myfile.is_open())
 	{
-	myfile << "sum_tau " << total_sum_tau << endl;
-	myfile << "num_msgs " << total_num_msgs << endl;
-	myfile << "k " << k << endl;
-	myfile << "Elapsed_Time " << elapsed_secs << endl;
+	myfile << "sum_tau\t" << total_sum_tau << endl;
+	myfile << "num_msgs\t" << total_num_msgs << endl;
+	myfile << "k\t" << k << endl;
+	myfile << "Elapsed_Time\t" << elapsed_secs << endl;
+	myfile << "Num_Msg_Errs\t" << num_msg_errors << endl;
 	myfile.close();
 	}
 	else printf("Unable to open file");
