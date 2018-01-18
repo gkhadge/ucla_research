@@ -11,6 +11,7 @@
 // #include <boost/random/uniform_int.hpp>
 #include <fstream>
 #include <assert.h>
+#include <string.h>
 // #include <chrono>
 using namespace std;
 
@@ -56,18 +57,6 @@ void update_probs(const long double* prob_vec_current, const char y, const char*
 	//   determined to be faster than the previous update_probs.m, so the name
 	//   was updated.
 
-	//M = length(prob_vec_current);
-
-	// Determine transition probability P(Y|X) for time (t+1), on the BSC
-	// dist_vec = (x_vec ~= y);
-
-	// Update belief for each j in {1,...,M}
-	//prob_vec_next = zeros(size(prob_vec_current));
-	//int prob_vec_next[M];
-	// for (int i=0;i<M;++i){
-	// 	prob_vec_next[i] = 0;
-	// }
-
 	long double prob_vec_next_sum = 0;
 	for (int mdx = 0; mdx < M; ++mdx) {
 		//printf("\n %d  %d", x_vec[mdx], y);
@@ -92,7 +81,7 @@ void update_probs(const long double* prob_vec_current, const char y, const char*
 }
 
 //function [set_S0, set_S1] = partition_beliefs(prob_vec)
-void partition_beliefs(const long double* prob_vec, const unsigned long long M, char* set_num)
+void partition_beliefs(const long double* prob_vec, const unsigned long long M, char* set_num, double thresh_factor=1e-6)
 {
 	// Partition beliefs into two sets S0 and S1 that are as close together in
 	// probability, but S0 is greater than S1
@@ -118,8 +107,25 @@ void partition_beliefs(const long double* prob_vec, const unsigned long long M, 
 	    return;
 	};
 
-	std::vector<unsigned long long> indices(M) ; // vector with 100 ints.
-	std::iota (indices.begin(), indices.end(), 0); // Fill with 0, 1, ..., 99.
+	std::vector<unsigned long long> indices; // vector with 100 ints.
+
+	// long double prob_vec_total = 0.0;
+	long double thresh = (long double) thresh_factor/M;
+	for (int mdx = 0; mdx < M; ++mdx) {
+		//printf("\n %d  %d", x_vec[mdx], y);
+	    // if (x_vec[mdx] != y)
+	    //     prob_vec_next[mdx] = prob_vec_current[mdx] * del;
+	    // else
+	    //     prob_vec_next[mdx] = prob_vec_current[mdx] * (1-del);
+
+	    if (prob_vec[mdx] > thresh) {
+	    	indices.push_back(mdx);
+	    	// prob_vec_total += prob_vec[mdx];
+	    }
+	}
+
+	// std::vector<unsigned long long> indices(M) ; // vector with 100 ints.
+	// std::iota (indices.begin(), indices.end(), 0); // Fill with 0, 1, ..., 99.
 
     unsigned long long k_max = *std::max_element(indices.begin(), indices.end(), compare_less);
 	long double prob_max = prob_vec[k_max];
@@ -226,16 +232,27 @@ void partition_beliefs(const long double* prob_vec, const unsigned long long M, 
     // if (probA + probB != 1)
     // 	throw std::runtime_error("Error probability does not add up");
 
-	char setA_val = prob_B > prob_A;
-	char setB_val = !setA_val;
-    for (vector<unsigned long long>::const_iterator i = setA.begin(); i != setA.end(); ++i)
-    	set_num[*i] = setA_val;	    
-    for (vector<unsigned long long>::const_iterator i = setB.begin(); i != setB.end(); ++i)
-    	set_num[*i] = setB_val;
+
+	// char setA_val = prob_B > prob_A;
+	// char setB_val = !setA_val;
+ //    for (vector<unsigned long long>::const_iterator i = setA.begin(); i != setA.end(); ++i)
+ //    	set_num[*i] = setA_val;	    
+ //    for (vector<unsigned long long>::const_iterator i = setB.begin(); i != setB.end(); ++i)
+ //    	set_num[*i] = setB_val;
+
+    memset ( set_num, 1, M );
+    if (prob_A > prob_B)
+    {
+    	for (vector<unsigned long long>::const_iterator i = setA.begin(); i != setA.end(); ++i)
+    		set_num[*i] = 0;	    
+    } else {
+	    for (vector<unsigned long long>::const_iterator i = setB.begin(); i != setB.end(); ++i)
+	    	set_num[*i] = 0;
+    }
 }
 
 //function [Etau_sim, num_msg_errors, num_msgs] = active_coding_M(M, del, epsi, num_msgs, coding_scheme)
-void active_coding_M(unsigned long long M, long double del, long double epsi, unsigned long num_msgs, int coding_scheme, unsigned long *sum_tau_out, unsigned long *_num_msg_errors, int print_output)
+void active_coding_M(unsigned long long M, long double del, long double epsi, unsigned long num_msgs, int coding_scheme, unsigned long *sum_tau_out, unsigned long *_num_msg_errors, double thresh_factor=1e-6)
 {
 
 	// function [Etau_sim, num_msg_errors, num_msgs] = active_coding_M(M, del, epsi, num_msgs, coding_scheme)
@@ -302,11 +319,11 @@ void active_coding_M(unsigned long long M, long double del, long double epsi, un
 	// (so we don't have to allocate such a huge amount of memory for all the
 	// arrays)
 	       
-	if (print_output >= 2) {
-		printf("\n");
-		printf("\ncapacity: %4.4f",capacity);
-		printf("\nnum_bits_per_msg: %d",num_bits_per_msg);
-	}
+	// if (print_output >= 2) {
+	// 	printf("\n");
+	// 	printf("\ncapacity: %4.4f",capacity);
+	// 	printf("\nnum_bits_per_msg: %d",num_bits_per_msg);
+	// }
 	//// Run the simulation
 
 	// fprintf('\n');
@@ -389,7 +406,7 @@ void active_coding_M(unsigned long long M, long double del, long double epsi, un
 	            // Partition messages into two sets based on the current beliefs
 	            // int x_vec[M];
 	            //[set_S0, set_S1] = partition_beliefs(prob_vec_current, M, set_num);
-				partition_beliefs(prob_vec_current, M, x_vec);
+				partition_beliefs(prob_vec_current, M, x_vec, thresh_factor);
 				// printf("\n");
 				// for(int i=0;i<M;++i)
 				// {
@@ -524,19 +541,19 @@ void active_coding_M(unsigned long long M, long double del, long double epsi, un
 	long double PrErr = (long double) (num_msg_errors) / num_msgs;
 
 
-    if (print_output >= 1)
-    {
-		printf("\n--- M = %lu (k = %u) ---", M, (unsigned int) log2(M));
-		printf("\nBSC crossover probability = %01.3f, target epsilon = %01.2e", del, epsi);
-		printf("\n#{Msg. Errors} = %lu, out of %lu codewords simulated", num_msg_errors, num_msgs);
-		printf("\nActual word-error probability is %01.3e", PrErr);
+ //    if (print_output >= 1)
+ //    {
+	// 	printf("\n--- M = %lu (k = %u) ---", M, (unsigned int) log2(M));
+	// 	printf("\nBSC crossover probability = %01.3f, target epsilon = %01.2e", del, epsi);
+	// 	printf("\n#{Msg. Errors} = %lu, out of %lu codewords simulated", num_msg_errors, num_msgs);
+	// 	printf("\nActual word-error probability is %01.3e", PrErr);
 
-		// Compute the average rate
-		long double Etau_sim = (long double) (sum_tau) / num_msgs;
-		long double rate_sim = log2(M) / Etau_sim;
-		printf("\nRate: %01.3f, latency: %01.2f", rate_sim, Etau_sim);
-		// printf("\n");
-	}
+	// 	// Compute the average rate
+	// 	long double Etau_sim = (long double) (sum_tau) / num_msgs;
+	// 	long double rate_sim = log2(M) / Etau_sim;
+	// 	printf("\nRate: %01.3f, latency: %01.2f", rate_sim, Etau_sim);
+	// 	// printf("\n");
+	// }
 	// printf("\nsum_tau: %lu, num_msgs: %lu", sum_tau, num_msgs);
 	*sum_tau_out = sum_tau;
 	*_num_msg_errors = num_msg_errors;
@@ -548,6 +565,7 @@ int main(int argc, char* argv[])
 	unsigned int k;
 	// int num_threads;
 	unsigned long num_msgs;
+	double thresh_factor;
 	if (argc <2)
 		k = 1;
 	else
@@ -564,6 +582,11 @@ int main(int argc, char* argv[])
 		num_msgs = 200000;
 	else
 		num_msgs = atoi(argv[3]);
+	if (argc < 5)
+		thresh_factor = 1e-6;
+	else
+		thresh_factor = atof(argv[4]);
+
 
 
 	// num_threads = 1;
@@ -657,7 +680,9 @@ int main(int argc, char* argv[])
 	printf("\ndel: %4.4Lf", del);
 	printf("\nepsi: %4.4Lf", epsi);
 	printf("\nnum_msgs: %lu", num_msgs);
+	printf("\nthresh_factor: %e", thresh_factor);
 	printf("\ncoding_scheme: %d", coding_scheme);
+
 	//[Etau_sim(Mdx), num_msg_errors(Mdx)] = active_coding_M(M(Mdx), del, epsi, num_msgs(Mdx), coding_scheme);
 
 
@@ -671,8 +696,9 @@ int main(int argc, char* argv[])
 	// active_coding_M(M, del, epsi, num_msgs, coding_scheme);
 
 	unsigned long total_sum_tau = 0;
-	int print_output = 0;
-	active_coding_M(M, del, epsi, num_msgs, coding_scheme, &total_sum_tau, &num_msg_errors, print_output);
+	// int print_output = 0;
+	// active_coding_M(M, del, epsi, num_msgs, coding_scheme, &total_sum_tau, &num_msg_errors, thresh_factor, print_output);
+	active_coding_M(M, del, epsi, num_msgs, coding_scheme, &total_sum_tau, &num_msg_errors, thresh_factor);
     
  //    //int num_threads = 4;
 
